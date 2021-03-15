@@ -13,8 +13,10 @@ import { catchError } from 'rxjs/operators';
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
 
-  constructor(private router: Router, private toastr: ToastrService) {}
+  constructor(private router: Router, private toastr: ToastrService) { }
 
+  //this class is for intercepting http errors for toastr so we can display them in browser
+  //if we get an error, do some stuff based on the error and give it to toastr
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     return next.handle(request).pipe(
       catchError(error => {
