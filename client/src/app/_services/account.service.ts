@@ -26,8 +26,6 @@ export class AccountService {
       map((user: User) => {
         if (user) {
           //if our login POST gets a user back, we're logged in
-          //set localStorage to have the user and put the user in the 'User' type ReplaySubject list
-          localStorage.setItem('user', JSON.stringify(user));
           this.setCurrentUser(user);
         }
         return user;
@@ -41,16 +39,15 @@ export class AccountService {
       map((user: User) => {
         if (user) {
           //if our register POST gets a user back, we're logged in
-          //set localStorage to have the user and put the user in the 'User' type ReplaySubject list
-          localStorage.setItem('user', JSON.stringify(user));
           this.setCurrentUser(user);
         }
       })
     )
   }
 
-  //puts the given user into the ReplaySubject list
+  //puts the given user into the ReplaySubject list and in browser's localstorage
   setCurrentUser(user: User) {
+    localStorage.setItem('user', JSON.stringify(user));
     this.currentUserSource.next(user);
   }
 

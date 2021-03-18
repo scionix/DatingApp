@@ -31,6 +31,8 @@ namespace API.Controllers
 
             using var hmac = new HMACSHA512();
 
+            //make the password with the HMAC, providing the entered password as the seed
+            //password salt is the provided 'key' member of the HMAC object
             var user = new AppUser
             {
                 UserName = registerDto.Username.ToLower(),
@@ -38,6 +40,7 @@ namespace API.Controllers
                 PasswordSalt = hmac.Key
             };
 
+            //add the user and save to db
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
@@ -56,14 +59,19 @@ namespace API.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<UserDto>> Login(RegisterDto loginDto)
         {
-            var user = await _context.Users.SingleOrDefaultAsync(x => x.UserName == loginDto.Username.ToLower());
-
+            //try and find the user via username, return Unauthorized if we cant find the user
+            var user = await _context.Users
+                .Include(p => p.Photos)
+                .SingleOrDefaultAsync(x => x.UserName == loginDto.Username.ToLower());
             if (user == null)
                 return Unauthorized("Invalid username");
 
+            //make a new HMAC object with the user's supplied password salt.  this should create an HMAC identical to the one we used when we made the password originally
+            //run the HMAC on the users' password, creating a hash.  This should match the users already generated password hash
             using var hmac = new HMACSHA512(user.PasswordSalt);
             var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(loginDto.Password));
 
+            //if the hashes dont match, return unauthorized
             for (int i = 0; i < computedHash.Length; i++)
             {
                 if (computedHash[i] != user.PasswordHash[i])
@@ -73,7 +81,8 @@ namespace API.Controllers
             return new UserDto
             {
                 Username = user.UserName,
-                Token = _tokenService.CreateToken(user)
+                Token = _tokenService.CreateToken(user),
+                PhotoUrl = user.Photos.FirstOrDefault(x => x.IsMain)?.Url
             };
         }
     }
